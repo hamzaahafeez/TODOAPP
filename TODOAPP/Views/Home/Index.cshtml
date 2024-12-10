@@ -1,1 +1,119 @@
-﻿
+﻿@model List<TODOAPP.Models.SQLDBModel>
+
+@{
+	ViewData["Title"] = "";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
+<div class="container">
+
+	<div class="form-container">
+		<form asp-action="AddOrUpdate" method="post" name="todoform">
+			<h2>@(ViewData.ContainsKey("IsEditMode") && (bool)ViewData["IsEditMode"] ? "Edit Todo" : "Add Todo")</h2>
+
+			<div class="form-group">
+				<label for="Title">Title</label>
+				<input type="text" class="form-control" id="Title" name="Title" value="@ViewData["Title"]" required />
+			</div>
+
+			<div class="form-group">
+				<label for="Date">Date</label>
+				<input type="datetime-local" class="form-control" id="Date" name="Date" value="@ViewData["Date"]" required />
+			</div>
+			<div class="form-group">
+				<input type="hidden" name="Id" value="@ViewData["Id"]" />
+			</div>
+
+			<div class="form-group">
+				<label for="IsCompleted">Completed</label>
+				<input type="checkbox" id="IsCompleted" name="IsCompleted" @(ViewData["IsCompleted"] != null && (bool)ViewData["IsCompleted"] ? "checked" : "") />
+			</div>
+
+			@if (ViewData.ContainsKey("IsEditMode") && (bool)ViewData["IsEditMode"])
+			{
+				<input type="hidden" name="Id" class="form-control" value="@ViewData["Id"]" />
+				<button type="submit" class="btn btn-warning">Update Todo</button>
+			}
+			else
+			{
+				<button type="submit" class="btn btn-primary">Add Todo</button>
+			}
+			<button class="btn btn-primary" onclick="clearForm()">Clear</button>
+		</form>
+	</div>
+
+
+	@if (Model != null && Model.Count > 0)
+	{
+		<table class="table" style="padding-top:20px">
+			<thead style="color:white;background-color:gray">
+				<tr>
+					<th>ID</th>
+					<th class="title-column">Title</th>
+					<th>Date</th>
+					<th>Status</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var item in Model)
+				{
+					<tr>
+						<td>@item.Id</td>
+						<td class="title-column">@item.Title</td>
+						<td>@item.Date</td>
+						<td>@(item.IsCompleted ? "Completed" : "Pending")</td>
+						<td>
+							<a href="@Url.Action("Complete", new { id = item.Id })" class="btn btn-success">
+								@if (item.IsCompleted)
+								{
+									<i class="fa fa-times-circle"></i>
+								}
+								else
+								{
+									<i class="fa fa-check-circle"></i>
+								}
+							</a>
+
+							<form asp-action="Delete" method="post" asp-route-id="@item.Id" style="display:inline;">
+								<button type="submit" class="btn btn-danger"> <i class="fa fa-trash"></i></button>
+							</form>
+							<button class="btn btn-info" onclick="populateEditForm(@item.Id)"><i class="fa fa-edit"></i></button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else
+	{
+		<p>No todo items found.</p>
+	}
+</div>
+
+<script>
+	// Function to clear form for adding a new Todo
+	function clearForm() {
+		document.getElementById("Title").value = "";
+		document.getElementById("Date").value = "";
+		document.querySelector('input[name="Id"]').value = "";
+		document.getElementById("IsCompleted").checked = false;
+		document.querySelector('form button[type="submit"]').textContent = "Add Todo";
+		document.querySelector('form').action = '/Home/AddOrUpdate';
+	}
+
+	// Function to populate the form when editing
+	function populateEditForm(id) {
+		 var todo = @Html.Raw(Json.Serialize(Model));
+		var item = todo.find(t => t.id === id);
+
+		document.getElementById('Title').value = item.title;
+		document.getElementById('Date').value = item.date.split('T')[0] + 'T' + item.date.split('T')[1].substring(0, 5);
+		document.getElementById('IsCompleted').checked = item.isCompleted;
+
+		 document.querySelector('button[type="submit"]').textContent = "Update Todo";
+		document.querySelector('input[name="Id"]').value = item.id;
+	}
+</script>
